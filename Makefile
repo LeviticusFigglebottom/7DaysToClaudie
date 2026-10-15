@@ -17,7 +17,7 @@ LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
 .PHONY: smoke tour wrist-audit check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
-        assets assets-force assets-list assets-clean assets-determinism bake stills \
+        assets assets-force assets-list assets-clean assets-determinism bake stills trailer-shot trailer-shots \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview menu-guard pad-pass
 
 help: ## Show this help
@@ -65,6 +65,13 @@ bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, re
 	@# After the import: the wreck's far forest draws the impostors baked just above.
 	@GODOT="$(GODOT)" $(ROOT)/tools/stills.sh || echo "stills: FAILED (the menu and the intro show no pictures; see build/stills_*.log)"
 	@$(MAKE) --no-print-directory import
+
+trailer-shot: ## Render trailer shot(s) SHOT="<id> ..." with Movie Maker -> build/trailer/shots/<id>/ (TRAILER_PREVIEW=1: 3 frames)
+	@test -n "$(SHOT)" || { echo 'usage: make trailer-shot SHOT=<id> (make trailer-shots lists them)'; exit 2; }
+	@GODOT="$(GODOT)" $(ROOT)/tools/trailer_shot.sh $(SHOT)
+
+trailer-shots: ## List the trailer shot ids (data/trailer)
+	@GODOT="$(GODOT)" $(ROOT)/tools/trailer_shot.sh --list
 
 stills: ## The menu's and the intro's pre-rendered pictures (ADR-0065; STILLS_FORCE=1 redraws)
 	@GODOT="$(GODOT)" $(ROOT)/tools/stills.sh $(STILLS)

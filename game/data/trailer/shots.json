@@ -1,0 +1,65 @@
+{
+	"_doc": "Showcase trailer shots (TrailerShotDef; make trailer-shot SHOT=<id>). Ids are the clip ids of the cut (tools/trailer/edit.json); dur is what the cut keeps, tail the handle recorded after it. Positions are [x, y, z] offsets from anchor [x, z], y above the ground at the anchor (camera.terrain_follow: above the ground under each key).",
+	"defs": [
+		{
+			"id": "dawn_drone",
+			"_doc": "Opens on black: a slow drone push down the Tamsin in the first light, mist on the water.",
+			"anchor": [148, 2216],
+			"dur": 5.0,
+			"hour": 6.45,
+			"weather": "mist",
+			"camera": {
+				"ease": "in_out",
+				"terrain_follow": true,
+				"keys": [
+					{"t": 0.0, "pos": [0, 34, 180], "look": [30, 0, 80], "fov": 55},
+					{"t": 2.75, "pos": [28, 28, 80], "look": [-10, 0, -20], "fov": 55},
+					{"t": 5.5, "pos": [-8, 24, -20], "look": [-30, 0, -120], "fov": 52}
+				]
+			}
+		},
+		{
+			"id": "pell_crane",
+			"_doc": "Pell's Crossing: the crane rises off Church Lane until the crossroads and Route 9's storefronts lie open below.",
+			"anchor": [-72, 2066],
+			"dur": 4.5,
+			"hour": 8.6,
+			"weather": "clear",
+			"camera": {
+				"ease": "in_out",
+				"terrain_follow": true,
+				"keys": [
+					{"t": 0.0, "pos": [-1, 1.8, 42], "look": [4, 2.5, 0], "fov": 58},
+					{"t": 2.5, "pos": [-3, 12, 48], "look": [8, 1, -4], "fov": 60},
+					{"t": 5.0, "pos": [-8, 32, 56], "look": [14, 0, -14], "fov": 62}
+				]
+			}
+		},
+		{
+			"id": "horde_overhead",
+			"_doc": "The Hum seen from above, under the full moon: the horde floods across the meadow at the hidden player.",
+			"anchor": [-292, 2296],
+			"dur": 3.5,
+			"lead": 4.0,
+			"_day": "The second Hum (day 14) falls on a full moon (world_clock.json moon), filmed past midnight with the moon high: on day 7's waning crescent, or with the moon low at 22:00, the meadow is black (SDFGI lights the night from the sky).",
+			"day": 14,
+			"hour": 21.8,
+			"exposure": 14.0,
+			"weather": "clear",
+			"player": [0, 0, 0],
+			"camera": {
+				"ease": "linear",
+				"keys": [
+					{"t": 0.0, "pos": [10, 30, 14], "look": [0, 0, 0], "fov": 62},
+					{"t": 4.0, "pos": [4, 25, 12], "look": [0, 0, -2], "fov": 62}
+				]
+			},
+			"actions": [
+				{"t": -4.0, "do": "hum", "until": 0.75},
+				{"t": -3.5, "do": "spawn", "enemy": "hollow", "at": [0, 0, -34], "count": 10, "spread": 9, "horde": true},
+				{"t": -3.0, "do": "spawn", "enemy": "lurcher", "at": [26, 0, -20], "count": 6, "spread": 7, "horde": true},
+				{"t": -2.5, "do": "spawn", "enemy": "hollow", "at": [-28, 0, 10], "count": 8, "spread": 8, "horde": true}
+			]
+		}
+	]
+}
