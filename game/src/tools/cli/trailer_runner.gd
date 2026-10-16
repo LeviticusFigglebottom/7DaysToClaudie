@@ -17,6 +17,14 @@ const FPS: int = 30
 const WARM: int = 20
 ## Seconds the world waits at most for the forest round the camera to stream in.
 const STREAM_WAIT: float = 300.0
+## What every shot is drawn at, whatever the window is. project.godot's window size override
+## (1280x720) beats --resolution; Movie Maker sizes its frames from the window at launch, so the
+## override has a `.movie` feature variant (1920x1080 under --write-movie). This keeps a preview
+## (no Movie Maker, a 1280x720 window) drawing at the same size.
+const SIZE: Vector2i = Vector2i(1920, 1080)
+## The graphics preset every shot is drawn with (with `-- --no-user-settings`, nothing else of the
+## player's settings file applies either).
+const PRESET: String = "ultra"
 
 var _def: TrailerShotDef
 var _w: Node
@@ -26,7 +34,29 @@ var _preview_out: String = ""
 
 
 func _ready() -> void:
+	_frame_setup()
 	_run.call_deferred()
+
+
+## Draws the root viewport at SIZE (stretch mode "viewport": the 3D renders at SIZE and the window
+## only shows it scaled) and forces PRESET, so a render doesn't depend on the window, the screen
+## or the player's settings.
+func _frame_setup() -> void:
+	if not Settings.ephemeral:
+		print("TRAILER warning: started without -- --no-user-settings: some of the player's settings apply")
+		Settings.ephemeral = true  # never write the player's file from here
+	Settings.set_graphics_preset(PRESET)
+	Settings.ui_scale = 1.0
+	var win: Window = get_window()
+	win.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	win.content_scale_size = SIZE
+	win.content_scale_factor = 1.0
+	if DisplayServer.get_name() != "headless":
+		win.mode = Window.MODE_WINDOWED
+	if OS.has_feature("movie") and win.size != SIZE:
+		print("TRAILER warning: Movie Maker records the %s window, not %s (window_*_override.movie)" % [win.size, SIZE])
+	print("TRAILER drawing at %s, preset %s (window %s)" % [get_viewport().get_visible_rect().size, Settings.graphics_preset, win.size])
 
 
 func _run() -> void:

@@ -47,6 +47,9 @@ const FPS_CAPS: PackedInt32Array = [0, 30, 60, 90, 120, 144, 165, 240]
 
 var _cfg := ConfigFile.new()
 var _default_bindings: Dictionary = {}
+## Started with `-- --no-user-settings` (the trailer renders): user://settings.cfg is neither read
+## nor written, so the run sees the shipped defaults whatever the player has chosen.
+var ephemeral: bool = false
 
 
 func _ready() -> void:
@@ -428,6 +431,9 @@ func _apply_display() -> void:
 # --- Persistence ---------------------------------------------------------------------------
 
 func save() -> void:
+	if ephemeral:
+		settings_changed.emit()
+		return
 	_cfg.set_value("gameplay", "mouse_sensitivity", mouse_sensitivity)
 	_cfg.set_value("gameplay", "invert_y", invert_y)
 	_cfg.set_value("gameplay", "fov", fov)
@@ -448,7 +454,8 @@ func save() -> void:
 
 
 func _load_user_settings() -> void:
-	if _cfg.load(SETTINGS_PATH) != OK:
+	ephemeral = OS.get_cmdline_user_args().has("--no-user-settings")
+	if ephemeral or _cfg.load(SETTINGS_PATH) != OK:
 		_cfg = ConfigFile.new()
 	graphics_preset = _cfg.get_value("graphics", "preset", "")
 	if graphics_preset == "":

@@ -26,7 +26,7 @@ for shot in "$@"; do
     mkdir -p "$out"
     flock "$ROOT/build/.godot.lock" timeout -k 30 3600 "$ROOT/tools/qa_watchdog.sh" "^TRAILER $shot (done|FAILED)" \
       xvfb-run -a -s "-screen 0 1920x1080x24" "$GODOT" --path "$GAME" --rendering-driver vulkan --audio-driver Dummy \
-      --resolution 1920x1080 --fixed-fps 30 -s res://src/tools/cli/trailer.gd -- --shot "$shot" --preview --out "$out" ${TRAILER_ARGS:-} \
+      --fixed-fps 30 -s res://src/tools/cli/trailer.gd -- --no-user-settings --shot "$shot" --preview --out "$out" ${TRAILER_ARGS:-} \
       > "$log" 2>&1 || true
     grep "^TRAILER" "$log" || tail -30 "$log"
     grep -q "^TRAILER $shot done" "$log" || { echo "trailer: $shot failed (see $log)" >&2; exit 1; }
@@ -41,8 +41,8 @@ for shot in "$@"; do
   # Movie Maker has written every frame by then, and the WAV's sizes are read from the data.
   flock "$ROOT/build/.godot.lock" timeout -k 30 36000 "$ROOT/tools/qa_watchdog.sh" "^TRAILER $shot (done|FAILED)" \
     xvfb-run -a -s "-screen 0 1920x1080x24" "$GODOT" --path "$GAME" --rendering-driver vulkan \
-    --resolution 1920x1080 --write-movie "$raw/frame.png" --fixed-fps 30 \
-    -s res://src/tools/cli/trailer.gd -- --shot "$shot" > "$log" 2>&1 || true
+    --write-movie "$raw/frame.png" --fixed-fps 30 \
+    -s res://src/tools/cli/trailer.gd -- --no-user-settings --shot "$shot" > "$log" 2>&1 || true
   grep "^TRAILER" "$log" || tail -30 "$log"
   grep -q "^TRAILER $shot done" "$log" || { echo "trailer: $shot failed (see $log)" >&2; exit 1; }
   frames=$(sed -n "s/^TRAILER recording \([0-9]*\) frames.*/\1/p" "$log" | tail -1)
